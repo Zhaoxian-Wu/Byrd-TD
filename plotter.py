@@ -1,24 +1,37 @@
-def plot(args):   
-    import pickle
-    import numpy as np
-    import seaborn as sns
-    import matplotlib.pyplot as plt
-    
-    f = open('sbe'+'_'+args.network+'_a'+str(args.attack)+'_lam'+str(args.lam)+'.pkl', 'rb')
-    asbe = np.array(pickle.load(f))
-    f.close()
-    f = open('ce'+'_'+args.network+'_a'+str(args.attack)+'_lam'+str(args.lam)+'.pkl', 'rb')
-    ace = np.array(pickle.load(f))
-    f.close()
+import argparse
+import os
+import pickle
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+def load_file_in_cache(file_name):
+    file_path = os.path.join('record', file_name)
+    with open(file_path, 'rb') as f:
+        obj = pickle.load(f)
+    return obj
+
+def plot(args):
+    asbe = np.array(load_file_in_cache('sbe'+'_'+args.network+'_a'+str(args.attack)+'_lam'+str(args.lam)+'.pkl'))
+    ace = np.array(load_file_in_cache('ce'+'_'+args.network+'_a'+str(args.attack)+'_lam'+str(args.lam)+'.pkl'))
     
     plt.style.use('seaborn')
     plt.rc('axes', labelsize=20)
     plt.rc('xtick', labelsize=15)
     plt.rc('ytick', labelsize=15)
     plt.rc('legend', fontsize=19)
-    linestyles = ('-','--','-','--')
-    # linestyles = ('-','--','-.','-','--','-.')
+    # linestyles = ('-','--','-','--')
+    linestyles = ('-','--','-.','-','--','-.')
     
+    lam = f'{float(f"{args.lam:.1g}"):g}'
+    legend_tuple = (
+        'TD'+'('+lam+')-mean',
+        'TD'+'('+lam+')-trim', 
+        'TD'+'('+lam+')-mean-attack',
+        'TD'+'('+lam+')-trim-attack',
+        'TD'+'('+lam+')-local'
+    )
+    # MSBE
     fig = plt.figure(figsize=(5.9,5.3))
     plt.ylabel('MSBE')
     plt.xlabel('Step')
@@ -29,16 +42,15 @@ def plot(args):
         plt.plot(x, y_mean, linestyles[i], linewidth=2.25)
     plt.subplots_adjust(left=0.15, right=0.98, top = 0.95, bottom=0.12)
     plt.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
-    lam = f'{float(f"{args.lam:.1g}"):g}'
-    plt.legend(('TD'+'('+lam+')-mean', 'TD'+'('+lam+')-trim', 
-                'TD'+'('+lam+')-mean-attack', 'TD'+'('+lam+')-trim-attack'))
+    plt.legend(legend_tuple)
     fig.savefig('sbe'+'_'+args.network+'_a'+str(args.attack)+'_lam'+str(args.lam)+'.pdf', dpi=fig.dpi)
     
+    # MCE
     fig = plt.figure(figsize=(5.9,5.3))
     plt.ylabel('MCE')
     try:
         if args.lnk:
-             plt.ylabel(r'MCE$\times k/\ln(k)$')
+            plt.ylabel(r'MCE$\times k/\ln(k)$')
     except:
         pass
     plt.xlabel('Step')
@@ -52,14 +64,12 @@ def plot(args):
         plt.plot(x, y_mean, linestyles[i], linewidth=2.25)
     plt.subplots_adjust(left=0.15, right=0.98, top=0.95, bottom=0.12)
     plt.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
-    plt.legend(('TD'+'('+lam+')-mean', 'TD'+'('+lam+')-trim', 
-                'TD'+'('+lam+')-mean-attack', 'TD'+'('+lam+')-trim-attack'))
+    plt.legend(legend_tuple)
     fig.savefig('ce'+'_'+args.network+'_a'+str(args.attack)+'_lam'+str(args.lam)+'.pdf', dpi=fig.dpi)
     plt.show()
 
 
 if __name__ == '__main__':
-    import argparse
     parser = argparse.ArgumentParser(description='Plotter for robust TD')
     
     parser.add_argument('--network', type=str, default='complete',
